@@ -8,30 +8,46 @@ stats_bp = Blueprint("stats", __name__, url_prefix="/stats")
 
 @stats_bp.route("/")
 def dashboard():
-    # Overall stats
     total_orders = db.session.query(func.count(Order.order_id)).scalar() or 0
-    total_spending = db.session.query(func.sum(Order.grand_total)).scalar() or 0.0
-    total_subtotal = db.session.query(func.sum(Order.subtotal)).scalar() or 0.0
-    total_shipping = db.session.query(func.sum(Order.shipping_cost)).scalar() or 0.0
-    avg_order_value = db.session.query(func.avg(Order.grand_total)).scalar() or 0.0
-    total_items = db.session.query(func.sum(Order.total_count)).scalar() or 0
-    total_lots = db.session.query(func.sum(Order.unique_count)).scalar() or 0
 
+    if total_orders == 0:
+        return render_template("stats/dashboard.html", total_orders=0)
+
+    # Compute EUR-normalized totals by iterating orders
+    # (needed because SQLite can't do the conditional EUR conversion in SQL)
+    orders = Order.query.all()
+
+    total_spending = 0.0
+    total_subtotal = 0.0
+    total_shipping = 0.0
+    total_items = 0
+    total_lots = 0
+
+    for o in orders:
+        total_spending += o.grand_total_in_eur
+        total_subtotal += o.subtotal_in_eur
+        total_shipping += o.shipping_cost_in_eur
+        total_items += o.total_count or 0
+        total_lots += o.unique_count or 0
+
+    avg_order_value = total_spending / total_orders if total_orders else 0.0
     avg_lot_price = total_subtotal / total_lots if total_lots else 0.0
     avg_piece_price = total_subtotal / total_items if total_items else 0.0
 
-    # Seller breakdown
-    seller_stats = (
-        db.session.query(
-            Order.seller_name,
-            func.count(Order.order_id).label("order_count"),
-            func.sum(Order.grand_total).label("total_spent"),
-            func.avg(Order.grand_total).label("avg_order"),
-        )
-        .group_by(Order.seller_name)
-        .order_by(func.sum(Order.grand_total).desc())
-        .all()
-    )
+    # Seller breakdown (EUR-normalized)
+    seller_map = {}
+    for o in orders:
+        name = o.seller_name or "Unknown"
+        if name not in seller_map:
+            seller_map[name] = {"count": 0, "total": 0.0}
+        seller_map[name]["count"] += 1
+        seller_map[name]["total"] += o.grand_total_in_eur
+
+    seller_stats = [
+        (name, data["count"], data["total"], data["total"] / data["count"])
+        for name, data in seller_map.items()
+    ]
+    seller_stats.sort(key=lambda x: x[2], reverse=True)
 
     # Status breakdown
     status_stats = (
@@ -43,14 +59,8 @@ def dashboard():
         .all()
     )
 
-    # Currency (use most common)
-    currency = (
-        db.session.query(Order.currency_code)
-        .group_by(Order.currency_code)
-        .order_by(func.count(Order.order_id).desc())
-        .first()
-    )
-    currency = currency[0] if currency else "EUR"
+    # Foreign currency orders count
+    foreign_count = sum(1 for o in orders if o.has_foreign_currency_info)
 
     return render_template(
         "stats/dashboard.html",
@@ -65,5 +75,6 @@ def dashboard():
         avg_piece_price=avg_piece_price,
         seller_stats=seller_stats,
         status_stats=status_stats,
-        currency=currency,
+        foreign_count=foreign_count,
+        currency="EUR",
     )

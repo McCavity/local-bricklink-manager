@@ -1,3 +1,5 @@
+import logging
+
 from flask import Flask
 from config import Config
 from app.database import db, init_db
@@ -8,6 +10,12 @@ def create_app(config=None):
     app.config.from_object(Config)
     if config:
         app.config.update(config)
+
+    # Enable logging for our modules
+    logging.basicConfig(
+        level=logging.DEBUG if app.config.get("DEBUG") else logging.INFO,
+        format="%(asctime)s %(name)s %(levelname)s: %(message)s",
+    )
 
     # Initialize database
     db.init_app(app)

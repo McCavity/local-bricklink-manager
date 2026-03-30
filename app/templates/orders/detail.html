@@ -37,15 +37,30 @@
         </div>
         <div class="meta-item">
             <span class="meta-label">Subtotal</span>
-            <span class="meta-value">{{ "%.2f"|format(order.subtotal) }} {{ order.currency_code }}</span>
+            <span class="meta-value">
+                {{ "%.2f"|format(order.subtotal) }} {{ order.currency_code }}
+                {% if order.has_foreign_currency_info and order.subtotal_eur %}
+                <span class="currency-hint">({{ "%.2f"|format(order.subtotal_eur) }} orig.)</span>
+                {% endif %}
+            </span>
         </div>
         <div class="meta-item">
             <span class="meta-label">Shipping</span>
-            <span class="meta-value">{{ "%.2f"|format(order.shipping_cost) }} {{ order.currency_code }}</span>
+            <span class="meta-value">
+                {{ "%.2f"|format(order.shipping_cost) }} {{ order.currency_code }}
+                {% if order.has_foreign_currency_info and order.shipping_cost_eur %}
+                <span class="currency-hint">({{ "%.2f"|format(order.shipping_cost_eur) }} orig.)</span>
+                {% endif %}
+            </span>
         </div>
         <div class="meta-item">
             <span class="meta-label">Grand Total</span>
-            <span class="meta-value total">{{ "%.2f"|format(order.grand_total) }} {{ order.currency_code }}</span>
+            <span class="meta-value total">
+                {{ "%.2f"|format(order.grand_total) }} {{ order.currency_code }}
+                {% if order.has_foreign_currency_info and order.grand_total_eur %}
+                <span class="currency-hint">({{ "%.2f"|format(order.grand_total_eur) }} orig.)</span>
+                {% endif %}
+            </span>
         </div>
         <div class="meta-item">
             <span class="meta-label">Avg Lot Price</span>
@@ -55,6 +70,12 @@
             <span class="meta-label">Avg Piece Price</span>
             <span class="meta-value">{{ "%.4f"|format(order.avg_piece_price) }} {{ order.currency_code }}</span>
         </div>
+        {% if order.has_foreign_currency_info and order.exchange_rate %}
+        <div class="meta-item">
+            <span class="meta-label">Store Currency</span>
+            <span class="meta-value">1 {{ order.currency_code }} = {{ "%.4f"|format(order.exchange_rate) }} (store rate)</span>
+        </div>
+        {% endif %}
     </div>
     {% if order.remarks %}
     <div class="meta-remarks">
@@ -64,9 +85,11 @@
 </div>
 
 <div class="order-actions">
+    {% if items %}
     <a href="{{ url_for('checklist.check_order', order_id=order.order_id) }}" class="btn btn-primary">Start Checklist</a>
+    {% endif %}
 
-    {% if order.status != 'Completed' %}
+    {% if order.status|upper not in ('COMPLETED', 'PURGED', 'CANCELLED') %}
     <form method="POST" action="{{ url_for('orders.mark_completed', order_id=order.order_id) }}" style="display:inline;"
           onsubmit="return confirm('Mark this order as Completed on BrickLink?')">
         <button type="submit" class="btn btn-secondary">Mark Completed</button>
@@ -74,8 +97,9 @@
     {% endif %}
 </div>
 
+{% if items %}
 <h2>Items ({{ items|length }} lots)</h2>
-<table class="data-table">
+<table class="data-table sortable">
     <thead>
         <tr>
             <th class="col-image">Image</th>
@@ -106,8 +130,13 @@
         {% endfor %}
     </tbody>
 </table>
+{% elif order.status == 'PURGED' %}
+<div class="empty-state">
+    <p>Item details are not available for purged orders.</p>
+</div>
+{% endif %}
 
-{% if order.status == 'Completed' or order.local_status == 'checked' %}
+{% if not order.has_buyer_feedback and (order.status|upper in ('COMPLETED',) or order.local_status == 'checked') %}
 <h2>Leave Feedback</h2>
 <div class="feedback-form-container">
     <form method="POST" action="{{ url_for('orders.submit_feedback', order_id=order.order_id) }}" class="feedback-form">
@@ -126,6 +155,10 @@
         <button type="submit" class="btn btn-primary"
                 onclick="return confirm('Submit this feedback to BrickLink?')">Submit Feedback</button>
     </form>
+</div>
+{% elif order.has_buyer_feedback %}
+<div class="feedback-given">
+    <span class="badge badge-completed">Feedback already submitted</span>
 </div>
 {% endif %}
 {% endblock %}

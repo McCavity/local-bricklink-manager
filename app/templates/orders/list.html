@@ -47,19 +47,19 @@
         <span id="selected-count"></span>
     </div>
 
-    <table class="data-table">
+    <table class="data-table sortable">
         <thead>
             <tr>
-                <th class="col-check"><input type="checkbox" id="select-all"></th>
-                <th>Order #</th>
+                <th class="col-check col-no-sort"><input type="checkbox" id="select-all"></th>
+                <th class="col-number">Order #</th>
                 <th>Date</th>
                 <th>Seller</th>
-                <th>Items</th>
-                <th>Lots</th>
+                <th class="col-number">Items</th>
+                <th class="col-number">Lots</th>
                 <th class="col-number">Total</th>
                 <th>Status</th>
                 <th>Local</th>
-                <th>Actions</th>
+                <th class="col-no-sort">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -68,15 +68,20 @@
                 <td class="col-check">
                     <input type="checkbox" name="order_ids" value="{{ order.order_id }}">
                 </td>
-                <td>
+                <td class="col-number" data-sort-value="{{ order.order_id }}">
                     <a href="{{ url_for('orders.order_detail', order_id=order.order_id) }}">{{ order.order_id }}</a>
                 </td>
-                <td>{{ order.order_date.strftime('%Y-%m-%d') if order.order_date else '-' }}</td>
+                <td data-sort-value="{{ order.order_date.strftime('%Y-%m-%d') if order.order_date else '' }}">{{ order.order_date.strftime('%Y-%m-%d') if order.order_date else '-' }}</td>
                 <td>{{ order.seller_name or order.store_name }}</td>
                 <td class="col-number">{{ order.total_count }}</td>
                 <td class="col-number">{{ order.unique_count }}</td>
-                <td class="col-number">{{ "%.2f"|format(order.grand_total) }} {{ order.currency_code }}</td>
-                <td><span class="badge badge-{{ order.status|lower }}">{{ order.status }}</span></td>
+                <td class="col-number" data-sort-value="{{ order.grand_total }}">
+                    {{ "%.2f"|format(order.grand_total) }} {{ order.currency_code }}
+                    {% if order.has_foreign_currency_info %}
+                    <span class="currency-hint">(orig. foreign)</span>
+                    {% endif %}
+                </td>
+                <td data-sort-value="{{ order.status }}"><span class="badge badge-{{ order.status|lower }}">{{ order.status }}</span></td>
                 <td>
                     {% if order.local_status %}
                     <span class="badge badge-local-{{ order.local_status }}">{{ order.local_status }}</span>

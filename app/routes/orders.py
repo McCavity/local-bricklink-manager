@@ -88,7 +88,7 @@ def mark_completed(order_id):
     try:
         client = get_client(current_app)
         client.update_order_status(order_id, "Completed")
-        order.status = "Completed"
+        order.status = "COMPLETED"
         db.session.commit()
         flash(f"Order {order_id} marked as Completed on BrickLink.", "success")
     except BrickLinkAPIError as e:

@@ -26,11 +26,14 @@ class BrickLinkClient:
 
     def _request(self, method, path, params=None, json_body=None):
         url = f"{BASE_URL}{path}"
-        logger.debug(f"{method} {url} params={params} body={json_body}")
+        logger.info(f"API {method} {url} params={params}")
         resp = self.session.request(
             method, url, params=params, json=json_body,
             headers={"Accept": "application/json"},
         )
+        logger.info(f"API response: HTTP {resp.status_code}, body length={len(resp.text)}")
+        logger.debug(f"API response body: {resp.text[:500]}")
+
         if resp.status_code != 200:
             try:
                 body = resp.json()
@@ -47,7 +50,10 @@ class BrickLinkClient:
                 meta.get("description", "Unknown error"),
                 meta,
             )
-        return body.get("data")
+        data = body.get("data")
+        if isinstance(data, list):
+            logger.info(f"API returned {len(data)} items")
+        return data
 
     def get_orders(self, direction="out", status=None, filed=False):
         """Get list of orders. direction='out' = orders the user placed (buyer)."""

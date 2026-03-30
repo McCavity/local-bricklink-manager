@@ -18,8 +18,14 @@ class Order(db.Model):
     grand_total = db.Column(db.Float, default=0.0)
     shipping_cost = db.Column(db.Float, default=0.0)
     currency_code = db.Column(db.String, default="EUR")
+    # EUR equivalents for foreign currency orders (NULL if already EUR)
+    subtotal_eur = db.Column(db.Float, nullable=True)
+    grand_total_eur = db.Column(db.Float, nullable=True)
+    shipping_cost_eur = db.Column(db.Float, nullable=True)
+    exchange_rate = db.Column(db.Float, nullable=True)  # rate used: 1 EUR = X foreign
     payment_method = db.Column(db.String, default="")
     buyer_order_count = db.Column(db.Integer, default=0)
+    has_buyer_feedback = db.Column(db.Boolean, default=False)  # did we leave feedback?
     remarks = db.Column(db.Text, default="")
     raw_json = db.Column(db.Text, default="")
     synced_at = db.Column(db.DateTime, nullable=True)
@@ -28,6 +34,32 @@ class Order(db.Model):
     items = db.relationship("OrderItem", backref="order", lazy="dynamic")
     checklist_entries = db.relationship("ChecklistEntry", backref="order", lazy="dynamic")
     feedback_entries = db.relationship("Feedback", backref="order", lazy="dynamic")
+
+    @property
+    def has_foreign_currency_info(self):
+        """True if this order was in a foreign store currency and we have the original amounts."""
+        return self.exchange_rate is not None and self.grand_total_eur is not None
+
+    @property
+    def grand_total_in_eur(self):
+        """Grand total in EUR for statistics. Primary fields are always in buyer currency (EUR)."""
+        return self.grand_total
+
+    @property
+    def subtotal_in_eur(self):
+        return self.subtotal
+
+    @property
+    def shipping_cost_in_eur(self):
+        return self.shipping_cost
+
+    @property
+    def original_currency(self):
+        """The store's original currency if different from EUR, else None."""
+        if self.has_foreign_currency_info and self.exchange_rate:
+            # Reverse-engineer: we stored 1 EUR = X foreign in exchange_rate
+            return True
+        return False
 
     @property
     def avg_lot_price(self):

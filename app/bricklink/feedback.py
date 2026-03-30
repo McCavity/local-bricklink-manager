@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timezone
 
 from app.database import db
-from app.models import Feedback
+from app.models import Feedback, Order
 from app.bricklink.sync import get_client
 from app.bricklink.client import BrickLinkAPIError
 
@@ -33,6 +33,10 @@ def submit_feedback(app, order_id, rating, comment=None):
         result = client.post_feedback(order_id, rating.upper(), comment)
         feedback.sent_at = datetime.now(timezone.utc)
         feedback.api_response = json.dumps(result) if result else ""
+        # Mark order as having buyer feedback
+        order = db.session.get(Order, order_id)
+        if order:
+            order.has_buyer_feedback = True
         db.session.commit()
         return True, "Feedback submitted successfully."
     except BrickLinkAPIError as e:
