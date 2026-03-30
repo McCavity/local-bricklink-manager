@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Orders - BrickLink Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Orders</h1>
+    <div class="header-actions">
+        <form method="POST" action="{{ url_for('sync.full_sync') }}" style="display:inline;">
+            <button type="submit" class="btn btn-secondary btn-sm">Full Sync</button>
+        </form>
+    </div>
+</div>
+
+<div class="filters">
+    <form method="GET" action="{{ url_for('orders.order_list') }}" class="filter-form">
+        <label>Status:
+            <select name="status" onchange="this.form.submit()">
+                <option value="">All</option>
+                {% for s in statuses %}
+                <option value="{{ s }}" {% if s == current_status %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Local:
+            <select name="local_status" onchange="this.form.submit()">
+                <option value="">All</option>
+                <option value="none" {% if current_local == 'none' %}selected{% endif %}>Not Received</option>
+                <option value="received" {% if current_local == 'received' %}selected{% endif %}>Received</option>
+                <option value="checked" {% if current_local == 'checked' %}selected{% endif %}>Checked</option>
+            </select>
+        </label>
+        <label>Sort:
+            <select name="sort" onchange="this.form.submit()">
+                <option value="date_desc" {% if current_sort == 'date_desc' %}selected{% endif %}>Date (newest)</option>
+                <option value="date_asc" {% if current_sort == 'date_asc' %}selected{% endif %}>Date (oldest)</option>
+                <option value="total_desc" {% if current_sort == 'total_desc' %}selected{% endif %}>Total (highest)</option>
+                <option value="total_asc" {% if current_sort == 'total_asc' %}selected{% endif %}>Total (lowest)</option>
+            </select>
+        </label>
+    </form>
+</div>
+
+<form method="POST" action="{{ url_for('orders.batch_mark_received') }}" id="batch-form">
+    <div class="batch-actions">
+        <button type="button" class="btn btn-sm" id="select-all-btn">Select All</button>
+        <button type="submit" class="btn btn-sm btn-primary">Mark Selected as Received</button>
+        <span id="selected-count"></span>
+    </div>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th class="col-check"><input type="checkbox" id="select-all"></th>
+                <th>Order #</th>
+                <th>Date</th>
+                <th>Seller</th>
+                <th>Items</th>
+                <th>Lots</th>
+                <th class="col-number">Total</th>
+                <th>Status</th>
+                <th>Local</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr class="{% if order.local_status == 'checked' %}row-checked{% elif order.local_status == 'received' %}row-received{% endif %}">
+                <td class="col-check">
+                    <input type="checkbox" name="order_ids" value="{{ order.order_id }}">
+                </td>
+                <td>
+                    <a href="{{ url_for('orders.order_detail', order_id=order.order_id) }}">{{ order.order_id }}</a>
+                </td>
+                <td>{{ order.order_date.strftime('%Y-%m-%d') if order.order_date else '-' }}</td>
+                <td>{{ order.seller_name or order.store_name }}</td>
+                <td class="col-number">{{ order.total_count }}</td>
+                <td class="col-number">{{ order.unique_count }}</td>
+                <td class="col-number">{{ "%.2f"|format(order.grand_total) }} {{ order.currency_code }}</td>
+                <td><span class="badge badge-{{ order.status|lower }}">{{ order.status }}</span></td>
+                <td>
+                    {% if order.local_status %}
+                    <span class="badge badge-local-{{ order.local_status }}">{{ order.local_status }}</span>
+                    {% else %}
+                    <span class="badge badge-local-none">-</span>
+                    {% endif %}
+                </td>
+                <td class="col-actions">
+                    <a href="{{ url_for('checklist.check_order', order_id=order.order_id) }}" class="btn btn-xs">Checklist</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="10" class="empty-state">
+                    No orders found. Click "Sync Orders" to fetch your orders from BrickLink.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/orders.js') }}"></script>
+{% endblock %}

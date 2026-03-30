@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Statistics - BrickLink Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Statistics</h1>
+</div>
+
+{% if total_orders == 0 %}
+<div class="empty-state">
+    <p>No order data yet. Sync your orders first to see statistics.</p>
+</div>
+{% else %}
+
+<div class="stats-cards">
+    <div class="stat-card">
+        <span class="stat-number">{{ total_orders }}</span>
+        <span class="stat-label">Total Orders</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ "%.2f"|format(total_spending) }}</span>
+        <span class="stat-label">Total Spending ({{ currency }})</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ "%.2f"|format(avg_order_value) }}</span>
+        <span class="stat-label">Avg Order Value ({{ currency }})</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ "%.2f"|format(total_shipping) }}</span>
+        <span class="stat-label">Total Shipping ({{ currency }})</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ total_items }}</span>
+        <span class="stat-label">Total Items</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ total_lots }}</span>
+        <span class="stat-label">Total Lots</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ "%.4f"|format(avg_piece_price) }}</span>
+        <span class="stat-label">Avg Piece Price ({{ currency }})</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ "%.4f"|format(avg_lot_price) }}</span>
+        <span class="stat-label">Avg Lot Price ({{ currency }})</span>
+    </div>
+</div>
+
+<h2>Status Breakdown</h2>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Status</th>
+            <th class="col-number">Count</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for status, count in status_stats %}
+        <tr>
+            <td><span class="badge badge-{{ status|lower }}">{{ status }}</span></td>
+            <td class="col-number">{{ count }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>Sellers</h2>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Seller</th>
+            <th class="col-number">Orders</th>
+            <th class="col-number">Total Spent ({{ currency }})</th>
+            <th class="col-number">Avg Order ({{ currency }})</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for seller, count, total, avg in seller_stats %}
+        <tr>
+            <td>{{ seller }}</td>
+            <td class="col-number">{{ count }}</td>
+            <td class="col-number">{{ "%.2f"|format(total) }}</td>
+            <td class="col-number">{{ "%.2f"|format(avg) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endif %}
+{% endblock %}

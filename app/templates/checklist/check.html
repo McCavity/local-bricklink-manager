@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Checklist - Order {{ order.order_id }} - BrickLink Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Checklist: Order #{{ order.order_id }}</h1>
+    <a href="{{ url_for('orders.order_detail', order_id=order.order_id) }}" class="btn btn-sm">&larr; Back to Order</a>
+</div>
+
+<div class="progress-bar-container">
+    <div class="progress-bar" style="width: {{ progress }}%"></div>
+    <span class="progress-text">{{ checked }} / {{ total }} checked ({{ progress }}%)</span>
+</div>
+
+<div class="checklist-actions">
+    <form method="POST" action="{{ url_for('checklist.mark_all_ok', order_id=order.order_id) }}" style="display:inline;">
+        <button type="submit" class="btn btn-sm btn-secondary">Mark All Remaining as OK</button>
+    </form>
+    <form method="POST" action="{{ url_for('checklist.complete_checklist', order_id=order.order_id) }}" style="display:inline;">
+        <button type="submit" class="btn btn-sm btn-primary">Finish &amp; View Summary</button>
+    </form>
+</div>
+
+<table class="data-table checklist-table">
+    <thead>
+        <tr>
+            <th class="col-image">Image</th>
+            <th>Part #</th>
+            <th>Name</th>
+            <th>Color</th>
+            <th class="col-number">Expected</th>
+            <th class="col-number">Received</th>
+            <th>Notes</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry, item in entries %}
+        <tr class="checklist-row checklist-{{ entry.status }}" id="row-{{ entry.id }}">
+            <td class="col-image">
+                <img src="{{ item.image_url }}" alt="{{ item.item_name }}" class="item-thumb"
+                     onerror="this.style.display='none'">
+            </td>
+            <td><code>{{ item.item_no }}</code></td>
+            <td>{{ item.item_name }}</td>
+            <td>{{ item.color_name }}</td>
+            <td class="col-number">{{ entry.expected_qty }}</td>
+            <td class="col-number">
+                <input type="number" class="qty-input" id="qty-{{ entry.id }}"
+                       value="{{ entry.received_qty }}" min="0" max="999"
+                       data-entry-id="{{ entry.id }}" data-order-id="{{ order.order_id }}"
+                       data-expected="{{ entry.expected_qty }}">
+            </td>
+            <td>
+                <input type="text" class="notes-input" id="notes-{{ entry.id }}"
+                       value="{{ entry.notes }}" placeholder="Notes..."
+                       data-entry-id="{{ entry.id }}" data-order-id="{{ order.order_id }}">
+            </td>
+            <td>
+                <span class="badge badge-check-{{ entry.status }}" id="status-{{ entry.id }}">{{ entry.status }}</span>
+            </td>
+            <td class="col-actions">
+                <button type="button" class="btn btn-xs btn-ok" data-entry-id="{{ entry.id }}"
+                        data-order-id="{{ order.order_id }}" data-expected="{{ entry.expected_qty }}">OK</button>
+                <button type="button" class="btn btn-xs btn-save" data-entry-id="{{ entry.id }}"
+                        data-order-id="{{ order.order_id }}">Save</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/checklist.js') }}"></script>
+{% endblock %}

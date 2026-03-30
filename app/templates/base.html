@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BrickLink Manager{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="{{ url_for('orders.order_list') }}">&#x1F9F1; BrickLink Manager</a>
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('orders.order_list') }}" class="{% if request.path.startswith('/orders') %}active{% endif %}">Orders</a>
+            <a href="{{ url_for('stats.dashboard') }}" class="{% if request.path.startswith('/stats') %}active{% endif %}">Statistics</a>
+        </div>
+        <div class="nav-actions">
+            <form method="POST" action="{{ url_for('sync.incremental_sync') }}" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-primary">Sync Orders</button>
+            </form>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">
+                {{ message }}
+                <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>Local BrickLink Manager</p>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

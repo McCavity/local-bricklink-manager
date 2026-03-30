@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Order {{ order.order_id }} - BrickLink Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Order #{{ order.order_id }}</h1>
+    <a href="{{ url_for('orders.order_list') }}" class="btn btn-sm">&larr; Back to Orders</a>
+</div>
+
+<div class="order-meta">
+    <div class="meta-grid">
+        <div class="meta-item">
+            <span class="meta-label">Seller</span>
+            <span class="meta-value">{{ order.seller_name or order.store_name }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Date</span>
+            <span class="meta-value">{{ order.order_date.strftime('%Y-%m-%d %H:%M') if order.order_date else '-' }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Status</span>
+            <span class="meta-value"><span class="badge badge-{{ order.status|lower }}">{{ order.status }}</span></span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Local Status</span>
+            <span class="meta-value">
+                {% if order.local_status %}
+                <span class="badge badge-local-{{ order.local_status }}">{{ order.local_status }}</span>
+                {% else %}
+                <span class="badge badge-local-none">Not received</span>
+                {% endif %}
+            </span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Items / Lots</span>
+            <span class="meta-value">{{ order.total_count }} / {{ order.unique_count }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Subtotal</span>
+            <span class="meta-value">{{ "%.2f"|format(order.subtotal) }} {{ order.currency_code }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Shipping</span>
+            <span class="meta-value">{{ "%.2f"|format(order.shipping_cost) }} {{ order.currency_code }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Grand Total</span>
+            <span class="meta-value total">{{ "%.2f"|format(order.grand_total) }} {{ order.currency_code }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Avg Lot Price</span>
+            <span class="meta-value">{{ "%.4f"|format(order.avg_lot_price) }} {{ order.currency_code }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Avg Piece Price</span>
+            <span class="meta-value">{{ "%.4f"|format(order.avg_piece_price) }} {{ order.currency_code }}</span>
+        </div>
+    </div>
+    {% if order.remarks %}
+    <div class="meta-remarks">
+        <strong>Remarks:</strong> {{ order.remarks }}
+    </div>
+    {% endif %}
+</div>
+
+<div class="order-actions">
+    <a href="{{ url_for('checklist.check_order', order_id=order.order_id) }}" class="btn btn-primary">Start Checklist</a>
+
+    {% if order.status != 'Completed' %}
+    <form method="POST" action="{{ url_for('orders.mark_completed', order_id=order.order_id) }}" style="display:inline;"
+          onsubmit="return confirm('Mark this order as Completed on BrickLink?')">
+        <button type="submit" class="btn btn-secondary">Mark Completed</button>
+    </form>
+    {% endif %}
+</div>
+
+<h2>Items ({{ items|length }} lots)</h2>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th class="col-image">Image</th>
+            <th>Part #</th>
+            <th>Name</th>
+            <th>Color</th>
+            <th>Cond.</th>
+            <th class="col-number">Qty</th>
+            <th class="col-number">Unit Price</th>
+            <th class="col-number">Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td class="col-image">
+                <img src="{{ item.image_url }}" alt="{{ item.item_name }}" class="item-thumb"
+                     onerror="this.style.display='none'">
+            </td>
+            <td><code>{{ item.item_no }}</code></td>
+            <td>{{ item.item_name }}</td>
+            <td>{{ item.color_name }}</td>
+            <td>{{ 'New' if item.condition == 'N' else 'Used' }}</td>
+            <td class="col-number">{{ item.quantity }}</td>
+            <td class="col-number">{{ "%.4f"|format(item.unit_price) }}</td>
+            <td class="col-number">{{ "%.2f"|format(item.total_price) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if order.status == 'Completed' or order.local_status == 'checked' %}
+<h2>Leave Feedback</h2>
+<div class="feedback-form-container">
+    <form method="POST" action="{{ url_for('orders.submit_feedback', order_id=order.order_id) }}" class="feedback-form">
+        <div class="form-group">
+            <label>Rating:</label>
+            <div class="rating-options">
+                <label><input type="radio" name="rating" value="PRAISE" checked> Praise</label>
+                <label><input type="radio" name="rating" value="NEUTRAL"> Neutral</label>
+                <label><input type="radio" name="rating" value="COMPLAINT"> Complaint</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="comment">Comment:</label>
+            <textarea name="comment" id="comment" rows="3" class="form-control">Thank you for a smooth transaction! Everything was well packed and as described.</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary"
+                onclick="return confirm('Submit this feedback to BrickLink?')">Submit Feedback</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

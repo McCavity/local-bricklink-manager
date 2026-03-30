@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Check Summary - Order {{ order.order_id }} - BrickLink Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Check Summary: Order #{{ order.order_id }}</h1>
+    <a href="{{ url_for('orders.order_detail', order_id=order.order_id) }}" class="btn btn-sm">&larr; Back to Order</a>
+</div>
+
+<div class="summary-cards">
+    <div class="summary-card card-ok">
+        <span class="card-number">{{ ok_items|length }}</span>
+        <span class="card-label">OK</span>
+    </div>
+    <div class="summary-card card-mismatch">
+        <span class="card-number">{{ mismatch_items|length }}</span>
+        <span class="card-label">Mismatch</span>
+    </div>
+    <div class="summary-card card-missing">
+        <span class="card-number">{{ missing_items|length }}</span>
+        <span class="card-label">Missing</span>
+    </div>
+    <div class="summary-card card-pending">
+        <span class="card-number">{{ pending_items|length }}</span>
+        <span class="card-label">Unchecked</span>
+    </div>
+</div>
+
+{% if mismatch_items %}
+<h2>Mismatched Items</h2>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th class="col-image">Image</th>
+            <th>Part #</th>
+            <th>Name</th>
+            <th>Color</th>
+            <th class="col-number">Expected</th>
+            <th class="col-number">Received</th>
+            <th class="col-number">Diff</th>
+            <th>Notes</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry, item in mismatch_items %}
+        <tr class="checklist-mismatch">
+            <td class="col-image"><img src="{{ item.image_url }}" class="item-thumb" onerror="this.style.display='none'"></td>
+            <td><code>{{ item.item_no }}</code></td>
+            <td>{{ item.item_name }}</td>
+            <td>{{ item.color_name }}</td>
+            <td class="col-number">{{ entry.expected_qty }}</td>
+            <td class="col-number">{{ entry.received_qty }}</td>
+            <td class="col-number diff-negative">{{ entry.received_qty - entry.expected_qty }}</td>
+            <td>{{ entry.notes }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if missing_items %}
+<h2>Missing Items</h2>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th class="col-image">Image</th>
+            <th>Part #</th>
+            <th>Name</th>
+            <th>Color</th>
+            <th class="col-number">Expected</th>
+            <th>Notes</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry, item in missing_items %}
+        <tr class="checklist-missing">
+            <td class="col-image"><img src="{{ item.image_url }}" class="item-thumb" onerror="this.style.display='none'"></td>
+            <td><code>{{ item.item_no }}</code></td>
+            <td>{{ item.item_name }}</td>
+            <td>{{ item.color_name }}</td>
+            <td class="col-number">{{ entry.expected_qty }}</td>
+            <td>{{ entry.notes }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if ok_items %}
+<details>
+    <summary><h2 style="display:inline">OK Items ({{ ok_items|length }})</h2></summary>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Part #</th>
+                <th>Name</th>
+                <th>Color</th>
+                <th class="col-number">Qty</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry, item in ok_items %}
+            <tr>
+                <td><code>{{ item.item_no }}</code></td>
+                <td>{{ item.item_name }}</td>
+                <td>{{ item.color_name }}</td>
+                <td class="col-number">{{ entry.expected_qty }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</details>
+{% endif %}
+
+<div class="summary-actions">
+    <a href="{{ url_for('checklist.check_order', order_id=order.order_id) }}" class="btn btn-secondary">Edit Checklist</a>
+    <a href="{{ url_for('orders.order_detail', order_id=order.order_id) }}" class="btn btn-primary">Back to Order</a>
+</div>
+{% endblock %}
